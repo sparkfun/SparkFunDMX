@@ -1,0 +1,24 @@
+#######################################
+# Syntax Coloring Map 
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+SparkFunDMX		KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+initRead		KEYWORD2
+initWrite 		KEYWORD2
+read			KEYWORD2
+write			KEYWORD2
+update 			KEYWORD2
+
+
+#######################################
+# Constants (LITERAL1)
+#######################################
