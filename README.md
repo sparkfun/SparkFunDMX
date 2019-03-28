@@ -1,13 +1,13 @@
-SparkFun AK9750 Quad PIR Human Presence Sensor Library
+SparkFun DMX Library
 ===========================================================
 
-![SparkFun Human Presence Sensor - AK9750](https://cdn.sparkfun.com//assets/parts/1/2/2/4/8/Qwiic-AK9750-3.jpg)
+![SparkFun ESP32 DMX to LED Shield](https://cdn.sparkfun.com/r/500-500/assets/parts/1/3/4/7/7/15110-SparkFun_ESP32_Thing_Plus_DMX_to_LED_Shield-01.jpg)
 
-[*SparkX Qwiic Human Presence Sensor - AK9750(SPX-14289)*](https://www.sparkfun.com/products/14289)
+[*SparkFun ESP32 DMX to LED Shield(DEV-15110)*](https://www.sparkfun.com/products/15110)
 
-The Qwiic Human Presence Sensor uses the AK9750 digital PIR. This sensor uses four sensors with overlapping fields of view in order to detect both human presence and the associated movement of that heat source.
+The SparkFun ESP32 DMX to LED Shield is capable of DMX output, input, as well as Artnet input. The shield is electrically isolated to keep with DMX spec. This library has been written to control DMX output and input.
 
-Library written by Nathan Seidle ([SparkFun](http://www.sparkfun.com)).
+Library written by Andy England ([SparkFun](http://www.sparkfun.com)) with help from code written by [Matt Tong](https://github.com/mtongnz/espDMX).
 
 Repository Contents
 -------------------

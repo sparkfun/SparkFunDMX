@@ -30,7 +30,7 @@ const int startUniverse = 0;
 const int endUniverse = 0;//end Universe should be total channels/512
 
 SparkFunDMX dmx;
-
+WiFiUdp UdpSend;
 bool sendFrame = 1;
 int previousDataLength = 0;
 
@@ -70,6 +70,7 @@ void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* d
   if (universe == endUniverse) //Display our data if we have received all of our universes, prevents incomplete frames when more universes are concerned.
   {
     dmx.update();
+	UdpSend.flush();
   }
 }
 
