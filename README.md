@@ -21,7 +21,7 @@ Documentation
 --------------
 
 * **[Installing an Arduino Library Guide](https://learn.sparkfun.com/tutorials/installing-an-arduino-library)** - Basic information on how to install an Arduino library.
-* **[Product Repository](https://github.com/sparkfun/SparkFun_ESP32_Thing_Plus_DMX_to_LED_Shield)** - Main repository (including hardware files) for the AK9750 Qwiic breakout board.
+* **[Product Repository](https://github.com/sparkfunx/Qwiic_Human_Presence_Sensor-AK9750)** - Main repository (including hardware files) for the AK9750 Qwiic breakout board.
 
 License Information
 -------------------
