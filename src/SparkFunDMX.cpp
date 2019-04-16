@@ -96,7 +96,7 @@ void SparkFunDMX::update() {
     digitalWrite(txPin, LOW); //88 uS break
     delayMicroseconds(88);  
     digitalWrite(txPin, HIGH); //4 Us Mark After Break
-    delayMicroseconds(4);
+    delayMicroseconds(1);
     pinMatrixOutAttach(txPin, U2TXD_OUT_IDX, false, false);
 
     DMXSerial.write(dmxData, chanSize);
