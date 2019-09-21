@@ -29,10 +29,10 @@ public:
   void write(int channel, uint8_t value);
   void update();
 private:
+  uint8_t _startCodeValue = 0xFF;
   bool _READ = true;
   bool _WRITE = false;
   bool _READWRITE;
-  static void startCode();
 };
 
 #endif

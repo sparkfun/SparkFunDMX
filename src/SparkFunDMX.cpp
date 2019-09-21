@@ -29,8 +29,6 @@ int enablePin = 21;		//dafault on ESP32
 int rxPin = 16;
 int txPin = 17;
 
-uint32_t _lastTimeStamp = 0;
-
 //DMX value array and size. Entry 0 will hold startbyte
 uint8_t dmxData[dmxMaxChannel] = {};
 int chanSize;
@@ -38,18 +36,51 @@ int currentChannel = 0;
 
 HardwareSerial DMXSerial(2);
 
+/* Interrupt Timer for DMX Receive */
+hw_timer_t * timer = NULL;
+portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
+
+volatile int _interruptCounter;
+volatile bool _startCodeDetected = false;
+
+volatile bool ledPin = false;
+
+/* Start Code is detected by 21 low interrupts */
+void IRAM_ATTR onTimer() {
+	if (digitalRead(rxPin) == 1)
+	{
+		_interruptCounter = 0; //If the RX Pin is high, we are not in an interrupt
+	}
+	else
+	{
+		_interruptCounter++;
+	}
+	if (_interruptCounter > 9)
+	{	
+		portENTER_CRITICAL_ISR(&timerMux);
+		_startCodeDetected = true;
+		DMXSerial.begin(DMXSPEED, DMXFORMAT, rxPin, txPin);
+		portEXIT_CRITICAL_ISR(&timerMux);
+		_interruptCounter = 0;
+	}
+}
+
 void SparkFunDMX::initRead(int chanQuant) {
+	
+  timer = timerBegin(0, 1, true);
+  timerAttachInterrupt(timer, &onTimer, true);
+  timerAlarmWrite(timer, 320, true);
+  timerAlarmEnable(timer);
   _READWRITE = _READ;
   if (chanQuant > dmxMaxChannel || chanQuant <= 0) 
   {
     chanQuant = defaultMax;
   }
   chanSize = chanQuant;
+  pinMode(13, OUTPUT);
   pinMode(enablePin, OUTPUT);
   digitalWrite(enablePin, LOW);
   pinMode(rxPin, INPUT);
-  _lastTimeStamp = micros();
-  attachInterrupt(digitalPinToInterrupt(rxPin), startCode, CHANGE);
 }
 
 // Set up the DMX-Protocol
@@ -70,7 +101,7 @@ void SparkFunDMX::initWrite (int chanQuant) {
 // Function to read DMX data
 uint8_t SparkFunDMX::read(int Channel) {
   if (Channel > chanSize) Channel = chanSize;
-  return(dmxData[Channel]); //add one to account for start byte
+  return(dmxData[Channel - 1]); //subtract one to account for start byte
 }
 
 // Function to send DMX data
@@ -81,14 +112,7 @@ void SparkFunDMX::write(int Channel, uint8_t value) {
   dmxData[Channel] = value; //add one to account for start byte
 }
 
-void SparkFunDMX::startCode() {
-  if ((micros() - _lastTimeStamp) >= 87)
-  {
-	currentChannel = 0;
-	DMXSerial.begin(DMXSPEED, DMXFORMAT, rxPin, txPin);
-  }
-  _lastTimeStamp = micros();
-}
+
 
 void SparkFunDMX::update() {
   if (_READWRITE == _WRITE)
@@ -108,17 +132,22 @@ void SparkFunDMX::update() {
   }
   else if (_READWRITE == _READ)//In a perfect world, this function ends serial communication upon packet completion and attaches RX to a CHANGE interrupt so the start code can be read again
   { 
-    while (DMXSerial.available())
+	if (_startCodeDetected == true)
 	{
-	  if (currentChannel == 0)
-	  {
-	  	DMXSerial.read();
-	  }
-	  dmxData[currentChannel++] = DMXSerial.read();
-	}
+		while (DMXSerial.available())
+		{
+			dmxData[currentChannel++] = DMXSerial.read();
+		}
 	if (currentChannel > chanSize) //Set the channel counter back to 0 if we reach the known end size of our packet
 	{
+		
+      portENTER_CRITICAL(&timerMux);
+	  _startCodeDetected = false;
+	  DMXSerial.flush();
+	  DMXSerial.end();
+      portEXIT_CRITICAL(&timerMux);
 	  currentChannel = 0;
+	}
 	}
   }
 }
