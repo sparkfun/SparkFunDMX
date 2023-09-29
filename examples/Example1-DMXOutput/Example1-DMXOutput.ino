@@ -26,12 +26,6 @@ SparkFunDMX dmx;
 #define PAN_CHANNEL 4
 #define TILT_CHANNEL 5
 
-//Pin Definitions for ESP32 WROOM DMX to LED Shield
-#define CLOCK = 5;
-#define DATA0 = 19;
-#define DATA1 = 18;
-#define DATA2 = 27;
-
 uint8_t x = 0;
 
 void setup() {

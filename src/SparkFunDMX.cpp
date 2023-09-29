@@ -13,6 +13,13 @@ or concerns with licensing, please contact techsupport@sparkfun.com.
 Distributed as-is; no warranty is given.
 ******************************************************************************/
 
+// Verify this is a valid platform (SparkFun ESP32 Thing Plus boards only)
+#if !(defined(ARDUINO_ESP32_THING_PLUS) \
+  || defined(ARDUINO_ESP32_THING_PLUS_C) \
+  || defined(ARDUINO_ESP32S2_THING_PLUS))
+#error SparkFun DMX library can only be used with ESP32 Thing Plus boards!
+#endif
+
 /* ----- LIBRARIES ----- */
 #include <Arduino.h>
 
@@ -25,9 +32,19 @@ Distributed as-is; no warranty is given.
 #define DMXSPEED       250000
 #define DMXFORMAT      SERIAL_8N2
 
-int enablePin = 21;		//dafault on ESP32
+#if defined(ARDUINO_ESP32_THING_PLUS)
+int enablePin = 21;
 int rxPin = 16;
 int txPin = 17;
+#elif defined(ARDUINO_ESP32_THING_PLUS_C)
+int enablePin = 4;
+int rxPin = 16;
+int txPin = 17;
+#elif defined(ARDUINO_ESP32S2_THING_PLUS)
+int enablePin = 3;
+int rxPin = 33;
+int txPin = 34;
+#endif
 
 //DMX value array and size. Entry 0 will hold startbyte
 uint8_t dmxData[dmxMaxChannel] = {};
@@ -124,7 +141,11 @@ void SparkFunDMX::update() {
     delayMicroseconds(88);  
     digitalWrite(txPin, HIGH); //4 Us Mark After Break
     delayMicroseconds(1);
+    #ifdef U2TXD_OUT_IDX // Some ESP32 boards only have 2 UARTs
     pinMatrixOutAttach(txPin, U2TXD_OUT_IDX, false, false);
+    #else
+    pinMatrixOutAttach(txPin, U1TXD_OUT_IDX, false, false);
+    #endif
 
     DMXSerial.write(dmxData, chanSize);
     DMXSerial.flush();

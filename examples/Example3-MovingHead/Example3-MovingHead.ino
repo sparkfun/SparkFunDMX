@@ -32,11 +32,23 @@ const int endUniverse = 0;//end Universe should be total channels/512
 bool sendFrame = 1;
 int previousDataLength = 0;
 
-//Pin Definitions for ESP32 WROOM
-#define CLOCK 5
-#define DATA0 19
-#define DATA1 18
-#define DATA2 27
+//Pin Definitions for ESP32 Thing Plus boards
+#if defined(ARDUINO_ESP32_THING_PLUS)
+#define CLOCK = 5;
+#define DATA0 = 19;
+#define DATA1 = 18;
+#define DATA2 = 27;
+#elif defined(ARDUINO_ESP32_THING_PLUS_C)
+#define CLOCK = 18;
+#define DATA0 = 19;
+#define DATA1 = 23;
+#define DATA2 = 33;
+#elif defined(ARDUINO_ESP32S2_THING_PLUS)
+#define CLOCK = 36;
+#define DATA0 = 37;
+#define DATA1 = 35;
+#define DATA2 = 11;
+#endif
 
 //Channel and Peripheral Definitions
 #define NUM_LEDS 64
