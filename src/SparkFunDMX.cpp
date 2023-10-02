@@ -94,7 +94,6 @@ void SparkFunDMX::initRead(int chanQuant) {
     chanQuant = defaultMax;
   }
   chanSize = chanQuant;
-  pinMode(13, OUTPUT);
   pinMode(enablePin, OUTPUT);
   digitalWrite(enablePin, LOW);
   pinMode(rxPin, INPUT);
