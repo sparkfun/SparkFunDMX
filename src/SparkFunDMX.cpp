@@ -51,7 +51,11 @@ uint8_t dmxData[dmxMaxChannel] = {};
 int chanSize;
 int currentChannel = 0;
 
+#if defined(ARDUINO_ESP32_THING_PLUS) || defined(ARDUINO_ESP32_THING_PLUS_C)
 HardwareSerial DMXSerial(2);
+#elif defined(ARDUINO_ESP32S2_THING_PLUS)
+HardwareSerial DMXSerial(1);
+#endif
 
 /* Interrupt Timer for DMX Receive */
 hw_timer_t * timer = NULL;
