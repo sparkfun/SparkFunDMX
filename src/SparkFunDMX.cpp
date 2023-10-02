@@ -154,6 +154,11 @@ void SparkFunDMX::update() {
   { 
 	if (_startCodeDetected == true)
 	{
+    // If there are extra bytes in serial buffer, remove them
+    while(DMXSerial.available() > chanSize)
+    {
+      DMXSerial.read();
+    }
 		while (DMXSerial.available())
 		{
 			dmxData[currentChannel++] = DMXSerial.read();
