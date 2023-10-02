@@ -72,7 +72,7 @@ void IRAM_ATTR onTimer() {
 	{
 		_interruptCounter++;
 	}
-	if (_interruptCounter > 9)
+	if ((_interruptCounter > 9) && (_startCodeDetected == false))
 	{	
 		portENTER_CRITICAL_ISR(&timerMux);
 		_startCodeDetected = true;
@@ -84,7 +84,7 @@ void IRAM_ATTR onTimer() {
 
 void SparkFunDMX::initRead(int chanQuant) {
 	
-  timer = timerBegin(0, 1, true);
+  timer = timerBegin(0, 2, true);
   timerAttachInterrupt(timer, &onTimer, true);
   timerAlarmWrite(timer, 320, true);
   timerAlarmEnable(timer);
