@@ -1,68 +1,73 @@
 /*
-  Read the 5 Channels of DMX Data coming from an ESP32 shield running Example 1
-  By: Andy England
+  Reads DMX data from channel 1
+  
+  By: Dryw Wade
   SparkFun Electronics
-  Date: , 2018
+  Date: 10/3/2023
   License: GNU. See license file for more information but you can
   basically do whatever you want with this code.
   This example runs two servos and a number of LED's off of 5 DMX channels
   
   Feel like supporting open source hardware?
   Buy a board from SparkFun! https://www.sparkfun.com/products/15110
+  
   Hardware Connections:
-  Connect pan/tilt servos to pins DATA1 and DATA2, connect LEDs to CLOCK and DATA0. Connect a DMX XLR-3 Cable in between the Output and Input shields
+  Connect a Thing Plus board to the SparkFun DMX Shield, and connect a DMX XLR-3
+  cable between the shield and another device that inputs DMX data. You can use
+  a second board and shield running Example 1!
 */
 
+// Inlcude DMX library
 #include <SparkFunDMX.h>
-#include <FastLED.h>
-#include <ESP32Servo.h>
 
+// Create DMX object
 SparkFunDMX dmx;
 
-//Pin Definitions for ESP32 WROOM
-#define CLOCK 5
-#define DATA0 19
-#define DATA1 18
-#define DATA2 27
+// Create serial port to be used for DMX interface. Exact implementation depends
+// on platform, this example is for the ESP32
+HardwareSerial dmxSerial(2);
 
-//Channel Defintions
-#define TOTAL_CHANNELS 5
+// Pin definitions, required by DMX library
+// These are for the SparkFun ESP32 Thing Plus (Micro-B)
+uint8_t rxPin = 16;
+uint8_t txPin = 17;
+uint8_t enPin = 21;
 
-#define HUE_CHANNEL 1
-#define SATURATION_CHANNEL 2
-#define VALUE_CHANNEL 3
-#define PAN_CHANNEL 4
-#define TILT_CHANNEL 5
+// Number of DMX channels, can be up tp 512
+uint16_t numChannels = 1;
 
-//Fixture Hardware Definitinos
-#define NUM_LEDS 64
-CRGB matrix[NUM_LEDS];
-Servo pan;
-Servo tilt;
-
-uint8_t x = 0;
-int myDirection = 1;
+// Create a counter for demonstration
+uint8_t counter = 0;
 
 void setup()
 {
-  Serial.begin(115200);
-  dmx.initRead(TOTAL_CHANNELS);           // initialization for complete bus
-  Serial.println("initialized...");
+    Serial.begin(115200);
+    Serial.println("SparkFun DMX Example 2 - Input");
 
-  FastLED.addLeds<APA102, DATA0, CLOCK, BGR>(matrix, NUM_LEDS);
-  FastLED.setBrightness(16);
-  pan.attach(DATA1);
-  tilt.attach(DATA2);
+    // Set pins for DMX serial port (may depend on platform)
+    dmxSerial.setPins(rxPin, txPin);
+
+    // Begin DMX
+    dmx.begin(dmxSerial, rxPin, txPin, enPin, numChannels);
+
+    // Set communicaiton direction, which can be changed on the fly as needed
+    dmx.setComDir(DMX_READ_DIR);
+
+    Serial.println("DMX initialized!");
 }
 
 void loop()
 {
-  dmx.update();
-  for (int led = 0; led < NUM_LEDS; led++)
-  {
-    matrix[led] = CHSV(dmx.read(HUE_CHANNEL), dmx.read(SATURATION_CHANNEL), dmx.read(VALUE_CHANNEL)); //Read the same value into all of our LED's
-  }
-  pan.write(map(dmx.read(PAN_CHANNEL), 0, 255, 0, 160));
-  tilt.write(map(dmx.read(TILT_CHANNEL), 0, 255, 0, 160));
-  FastLED.show();
+    // Wait until data has been received
+    while(dmx.dataAvailable() == false)
+    {
+        // Update must be called to update received data
+        dmx.update();
+    }
+
+    // Data has been received, read out channel 1
+    uint8_t data = dmx.readByte(1);
+    
+    Serial.print("DMX: read value from channel 1: ");
+    Serial.println(data);
 }
