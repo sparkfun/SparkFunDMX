@@ -1,11 +1,11 @@
 /******************************************************************************
 SparkFunDMX.h
 Arduino Library for the SparkFun ESP32 LED to DMX Shield
-Andy England @ SparkFun Electronics
-7/22/2019
+Dryw Wade @ SparkFun Electronics
+10/3/2023
 
 Development environment specifics:
-Arduino IDE 1.6.4
+Arduino IDE 2.2.1
 
 This code is released under the [MIT License](http://opensource.org/licenses/MIT).
 Please review the LICENSE.md file included with this example. If you have any questions 
@@ -13,26 +13,89 @@ or concerns with licensing, please contact techsupport@sparkfun.com.
 Distributed as-is; no warranty is given.
 ******************************************************************************/
 
-#include <inttypes.h>
-
-
 #ifndef SparkFunDMX_h
 #define SparkFunDMX_h
 
-// ---- Methods ----
+#include <Arduino.h>
+#include <HardwareSerial.h>
 
-class SparkFunDMX {
-public:
-  void initRead(int maxChan);
-  void initWrite(int maxChan);
-  uint8_t read(int Channel);
-  void write(int channel, uint8_t value);
-  void update();
-private:
-  uint8_t _startCodeValue = 0xFF;
-  bool _READ = true;
-  bool _WRITE = false;
-  bool _READWRITE;
+// DMX supports up to 512 channels, plus 1 for channel 0
+#define DMX_MAX_CHANNELS 513
+
+// DMX messages are started with a break signal of 88us. Also define a small
+// margin for signals slightly shorter than 88us
+#define DMX_BREAK_DURATION_MICROS 88
+#define DMX_BREAK_DURATION_MARGIN 8
+
+// DMX operates at 250kbps with 2 parity bits
+#define DMX_BAUD 250000
+#define DMX_FORMAT SERIAL_8N2
+
+// DMX can't send and transmit at same time
+#define DMX_WRITE_DIR 0
+#define DMX_READ_DIR 1
+
+class SparkFunDMX
+{
+    public:
+        /// @brief Begins DMX class
+        /// @param port Serial port for communication
+        /// @param rxPin Receive pin used by serial port
+        /// @param txPin Transmit pin used by serial port
+        /// @param enPin Enable pin connected to bridge chip, used for direction
+        /// @param numChannels Number of DMX channels, 512 max
+        static void begin(HardwareSerial& port, uint8_t rxPin, uint8_t txPin, uint8_t enPin, uint16_t numChannels);
+        
+        /// @brief Set communication direction, either read or write
+        /// @param comDir Either DMX_WRITE_DIR or DMX_READ_DIR
+        static void setComDir(bool comDir);
+        
+        /// @brief Copy data from a provided byte buffer
+        /// @param data Buffer with data to be sent
+        /// @param numBytes Number of bytes to copy from buffer
+        /// @param startChannel Channel to start copying data to
+        static void writeBytes(uint8_t* data, uint16_t numBytes, uint16_t startChannel = 1);
+        
+        /// @brief Copy a single byte to a specified channel
+        /// @param data Byte to copy
+        /// @param channel Channel to copy data to
+        static void writeByte(uint8_t data, uint16_t channel);
+        
+        /// @brief Copy data to a provided byte buffer
+        /// @param data Buffer with data to be read
+        /// @param numBytes Number of bytes to copy to buffer
+        /// @param startChannel Channel to start copying data from
+        static void readBytes(uint8_t* data, uint16_t numBytes, uint16_t startChannel = 1);
+        
+        /// @brief Copy a single byte from a specified channel
+        /// @param channel Channel to copy data from
+        /// @return Byte from specified channel
+        static uint8_t readByte(uint16_t channel);
+        
+        /// @brief When reading, returns whether data has been received
+        /// @return True if data is available, else false
+        static bool dataAvailable();
+        
+        /// @brief When in read mode, will check to see if new data is available
+        /// and ready to be read. When in write mode, will actually send out data
+        /// @return True if successful, else false
+        static bool update();
+
+    private:
+        
+        /// @brief Interrupt service routine to detect break signal
+        static void _rxISR();
+        
+        static uint8_t _rxPin;
+        static uint8_t _txPin;
+        static uint8_t _enPin;
+        static uint16_t _numChannels;
+        static uint8_t _dmxBuffer[DMX_MAX_CHANNELS];
+        static HardwareSerial* _dmxSerial;
+        static bool _comDir;
+        static bool _dataAvailable;
+        static bool _synced;
+        static uint32_t _tStartBreak;
 };
 
 #endif
