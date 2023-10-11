@@ -22,16 +22,14 @@ Distributed as-is; no warranty is given.
 // DMX supports up to 512 channels, plus 1 for channel 0
 #define DMX_MAX_CHANNELS 513
 
-// DMX messages are started with a break signal of 88us. Also define a small
-// margin for signals slightly shorter than 88us
+// DMX messages are started with a break signal of at least 88us
 #define DMX_BREAK_DURATION_MICROS 88
-#define DMX_BREAK_DURATION_MARGIN 8
 
 // DMX operates at 250kbps with 2 parity bits
 #define DMX_BAUD 250000
 #define DMX_FORMAT SERIAL_8N2
 
-// DMX can't send and transmit at same time
+// Macros for read or write direcion, DMX can't send and transmit at same time
 #define DMX_WRITE_DIR 0
 #define DMX_READ_DIR 1
 
@@ -39,12 +37,11 @@ class SparkFunDMX
 {
     public:
         /// @brief Begins DMX class
-        /// @param port Serial port for communication
-        /// @param rxPin Receive pin used by serial port
-        /// @param txPin Transmit pin used by serial port
+        /// @param port Serial port for communication. This library will not
+        /// begin the serial port, that must be done before calling dmx.begin()
         /// @param enPin Enable pin connected to bridge chip, used for direction
         /// @param numChannels Number of DMX channels, 512 max
-        static void begin(HardwareSerial& port, uint8_t rxPin, uint8_t txPin, uint8_t enPin, uint16_t numChannels);
+        static void begin(HardwareSerial& port, uint8_t enPin, uint16_t numChannels);
         
         /// @brief Set communication direction, either read or write
         /// @param comDir Either DMX_WRITE_DIR or DMX_READ_DIR
@@ -82,20 +79,13 @@ class SparkFunDMX
         static bool update();
 
     private:
-        
-        /// @brief Interrupt service routine to detect break signal
-        static void _rxISR();
-        
-        static uint8_t _rxPin;
-        static uint8_t _txPin;
-        static uint8_t _enPin;
-        static uint16_t _numChannels;
-        static uint8_t _dmxBuffer[DMX_MAX_CHANNELS];
+        // Member variables
         static HardwareSerial* _dmxSerial;
+        static uint8_t _dmxBuffer[DMX_MAX_CHANNELS];
+        static uint16_t _numChannels;
+        static uint8_t _enPin;
         static bool _comDir;
         static bool _dataAvailable;
-        static bool _synced;
-        static uint32_t _tStartBreak;
 };
 
 #endif

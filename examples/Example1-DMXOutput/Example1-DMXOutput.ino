@@ -27,16 +27,13 @@ SparkFunDMX dmx;
 // on platform, this example is for the ESP32
 HardwareSerial dmxSerial(2);
 
-// Pin definitions, required by DMX library
-// These are for the SparkFun ESP32 Thing Plus (Micro-B)
-uint8_t rxPin = 16;
-uint8_t txPin = 17;
+// Enable pin for DMX shield (Free pin on Thing Plus or Feather pinout)
 uint8_t enPin = 21;
 
 // Number of DMX channels, can be up tp 512
 uint16_t numChannels = 1;
 
-// Create a counter for demonstration
+// Create a counter as example data
 uint8_t counter = 0;
 
 void setup()
@@ -44,11 +41,11 @@ void setup()
     Serial.begin(115200);
     Serial.println("SparkFun DMX Example 1 - Output");
 
-    // Set pins for DMX serial port (may depend on platform)
-    dmxSerial.setPins(rxPin, txPin);
+    // Begin DMX serial port
+    dmxSerial.begin(DMX_BAUD, DMX_FORMAT);
 
-    // Begin DMX
-    dmx.begin(dmxSerial, rxPin, txPin, enPin, numChannels);
+    // Begin DMX driver
+    dmx.begin(dmxSerial, enPin, numChannels);
 
     // Set communicaiton direction, which can be changed on the fly as needed
     dmx.setComDir(DMX_WRITE_DIR);
