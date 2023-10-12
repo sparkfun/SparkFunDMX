@@ -12,13 +12,22 @@ SparkFunDMX		KEYWORD1
 # Methods and Functions (KEYWORD2)
 #######################################
 
-initRead		KEYWORD2
-initWrite 		KEYWORD2
-read			KEYWORD2
-write			KEYWORD2
-update 			KEYWORD2
-
+begin           KEYWORD2
+setComDir       KEYWORD2
+writeBytes      KEYWORD2
+writeByte       KEYWORD2
+readBytes       KEYWORD2
+readByte        KEYWORD2
+dataAvailable   KEYWORD2
+update          KEYWORD2
 
 #######################################
 # Constants (LITERAL1)
 #######################################
+
+DMX_MAX_CHANNELS            LITERAL1
+DMX_BREAK_DURATION_MICROS   LITERAL1
+DMX_BAUD                    LITERAL1
+DMX_FORMAT                  LITERAL1
+DMX_WRITE_DIR               LITERAL1
+DMX_READ_DIR                LITERAL1
