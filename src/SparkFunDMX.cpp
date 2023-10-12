@@ -1,11 +1,11 @@
 /******************************************************************************
 SparkFunDMX.h
 Arduino Library for the SparkFun ESP32 LED to DMX Shield
-Andy England @ SparkFun Electronics
-7/22/2019
+Dryw Wade @ SparkFun Electronics
+10/3/2023
 
 Development environment specifics:
-Arduino IDE 1.6.4
+Arduino IDE 2.2.1
 
 This code is released under the [MIT License](http://opensource.org/licenses/MIT).
 Please review the LICENSE.md file included with this example. If you have any questions 
@@ -14,142 +14,155 @@ Distributed as-is; no warranty is given.
 ******************************************************************************/
 
 /* ----- LIBRARIES ----- */
-#include <Arduino.h>
-
 #include "SparkFunDMX.h"
-#include <HardwareSerial.h>
 
-#define dmxMaxChannel  513
-#define defaultMax 32
+// Static member definitions and initial values
+HardwareSerial* SparkFunDMX::_dmxSerial = nullptr;
+uint8_t SparkFunDMX::_dmxBuffer[DMX_MAX_CHANNELS];
+uint16_t SparkFunDMX::_numChannels = 1;
+uint8_t SparkFunDMX::_enPin = 255;
+bool SparkFunDMX::_comDir = DMX_READ_DIR;
+bool SparkFunDMX::_dataAvailable = false;
 
-#define DMXSPEED       250000
-#define DMXFORMAT      SERIAL_8N2
+void SparkFunDMX::begin(HardwareSerial& port, uint8_t enPin, uint16_t numChannels)
+{
+    // Store serial stream port
+    _dmxSerial = &port;
 
-int enablePin = 21;		//dafault on ESP32
-int rxPin = 16;
-int txPin = 17;
+    // Store enable pin
+    _enPin = enPin;
 
-//DMX value array and size. Entry 0 will hold startbyte
-uint8_t dmxData[dmxMaxChannel] = {};
-int chanSize;
-int currentChannel = 0;
+    // Store number of requested channels, plus 1 for channel 0
+    _numChannels = numChannels + 1;
 
-HardwareSerial DMXSerial(2);
+    // Ensure number of channels is not above the limit
+    if(_numChannels > DMX_MAX_CHANNELS)
+        _numChannels = DMX_MAX_CHANNELS;
 
-/* Interrupt Timer for DMX Receive */
-hw_timer_t * timer = NULL;
-portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
-
-volatile int _interruptCounter;
-volatile bool _startCodeDetected = false;
-
-volatile bool ledPin = false;
-
-/* Start Code is detected by 21 low interrupts */
-void IRAM_ATTR onTimer() {
-	if (digitalRead(rxPin) == 1)
-	{
-		_interruptCounter = 0; //If the RX Pin is high, we are not in an interrupt
-	}
-	else
-	{
-		_interruptCounter++;
-	}
-	if (_interruptCounter > 9)
-	{	
-		portENTER_CRITICAL_ISR(&timerMux);
-		_startCodeDetected = true;
-		DMXSerial.begin(DMXSPEED, DMXFORMAT, rxPin, txPin);
-		portEXIT_CRITICAL_ISR(&timerMux);
-		_interruptCounter = 0;
-	}
+    // Configure enable pin, default to reading
+    pinMode(_enPin, OUTPUT);
+    setComDir(DMX_READ_DIR);
 }
 
-void SparkFunDMX::initRead(int chanQuant) {
-	
-  timer = timerBegin(0, 1, true);
-  timerAttachInterrupt(timer, &onTimer, true);
-  timerAlarmWrite(timer, 320, true);
-  timerAlarmEnable(timer);
-  _READWRITE = _READ;
-  if (chanQuant > dmxMaxChannel || chanQuant <= 0) 
-  {
-    chanQuant = defaultMax;
-  }
-  chanSize = chanQuant;
-  pinMode(13, OUTPUT);
-  pinMode(enablePin, OUTPUT);
-  digitalWrite(enablePin, LOW);
-  pinMode(rxPin, INPUT);
+void SparkFunDMX::setComDir(bool comDir)
+{
+    // No need to do anything if this direction is already set
+    if(_comDir == comDir)
+        return;
+
+    // Store communication direction
+    _comDir = comDir;
+    
+    // Flush serial buffer contents
+    _dmxSerial->flush(false);
+
+    if(comDir == DMX_WRITE_DIR)
+    {
+        // Enable output
+        digitalWrite(_enPin, HIGH);
+    }
+    else // DMX_READ_DIR
+    {
+        // Disable output
+        digitalWrite(_enPin, LOW);
+    }
 }
 
-// Set up the DMX-Protocol
-void SparkFunDMX::initWrite (int chanQuant) {
-
-  _READWRITE = _WRITE;
-  if (chanQuant > dmxMaxChannel || chanQuant <= 0) {
-    chanQuant = defaultMax;
-  }
-
-  chanSize = chanQuant + 1; //Add 1 for start code
-
-  DMXSerial.begin(DMXSPEED, DMXFORMAT, rxPin, txPin);
-  pinMode(enablePin, OUTPUT);
-  digitalWrite(enablePin, HIGH);
+void SparkFunDMX::writeBytes(uint8_t* data, uint16_t numBytes, uint16_t startChannel)
+{
+    // Copy data into buffer
+    uint8_t* startPtr = _dmxBuffer + startChannel;
+    memcpy(startPtr, data, numBytes);
 }
 
-// Function to read DMX data
-uint8_t SparkFunDMX::read(int Channel) {
-  if (Channel > chanSize) Channel = chanSize;
-  return(dmxData[Channel - 1]); //subtract one to account for start byte
+void SparkFunDMX::writeByte(uint8_t data, uint16_t channel)
+{
+    // Store data
+    _dmxBuffer[channel] = data;
 }
 
-// Function to send DMX data
-void SparkFunDMX::write(int Channel, uint8_t value) {
-  if (Channel < 0) Channel = 0;
-  if (Channel > chanSize) chanSize = Channel;
-  dmxData[0] = 0;
-  dmxData[Channel] = value; //add one to account for start byte
+void SparkFunDMX::readBytes(uint8_t* data, uint16_t numBytes, uint16_t startChannel)
+{
+    // Clear flag, this is now old data
+    _dataAvailable = false;
+
+    // Copy data into buffer
+    uint8_t* startPtr = _dmxBuffer + startChannel;
+    memcpy(data, startPtr, numBytes);
 }
 
+uint8_t SparkFunDMX::readByte(uint16_t channel)
+{
+    // Clear flag, this is now old data
+    _dataAvailable = false;
 
-
-void SparkFunDMX::update() {
-  if (_READWRITE == _WRITE)
-  {
-	DMXSerial.begin(DMXSPEED, DMXFORMAT, rxPin, txPin);//Begin the Serial port
-    pinMatrixOutDetach(txPin, false, false); //Detach our
-    pinMode(txPin, OUTPUT); 
-    digitalWrite(txPin, LOW); //88 uS break
-    delayMicroseconds(88);  
-    digitalWrite(txPin, HIGH); //4 Us Mark After Break
-    delayMicroseconds(1);
-    pinMatrixOutAttach(txPin, U2TXD_OUT_IDX, false, false);
-
-    DMXSerial.write(dmxData, chanSize);
-    DMXSerial.flush();
-    DMXSerial.end();//clear our DMX array, end the Hardware Serial port
-  }
-  else if (_READWRITE == _READ)//In a perfect world, this function ends serial communication upon packet completion and attaches RX to a CHANGE interrupt so the start code can be read again
-  { 
-	if (_startCodeDetected == true)
-	{
-		while (DMXSerial.available())
-		{
-			dmxData[currentChannel++] = DMXSerial.read();
-		}
-	if (currentChannel > chanSize) //Set the channel counter back to 0 if we reach the known end size of our packet
-	{
-		
-      portENTER_CRITICAL(&timerMux);
-	  _startCodeDetected = false;
-	  DMXSerial.flush();
-	  DMXSerial.end();
-      portEXIT_CRITICAL(&timerMux);
-	  currentChannel = 0;
-	}
-	}
-  }
+    // Return requested data
+    return _dmxBuffer[channel];
 }
 
-// Function to update the DMX bus
+bool SparkFunDMX::dataAvailable()
+{
+    return _dataAvailable;
+}
+
+bool SparkFunDMX::update()
+{
+    if(_comDir == DMX_WRITE_DIR)
+    {
+        // We need to send a break signal to indicate the start of the message.
+        // Arduino doesn't really have a way to actually send a break signal, so
+        // this is a hacky solution: the baud rate is reduced such that sending
+        // a zero byte creates a sufficiently long pulse to simulate a break
+        
+        // Reduce baud rate
+        uint32_t breakBaud = 1000000 * 8 / DMX_BREAK_DURATION_MICROS;
+        _dmxSerial->updateBaudRate(breakBaud);
+
+        // Send a zero at this new baud rate
+        _dmxSerial->write(0);
+        _dmxSerial->flush();
+
+        // Return baud rate to original value
+        _dmxSerial->updateBaudRate(DMX_BAUD);
+
+        // Send message
+        _dmxSerial->write(_dmxBuffer, _numChannels);
+
+        // Success
+        return true;
+    }
+    // else _comDir == DMX_READ_DIR
+    // Check if we've received the amount of data expected, +1 for break signal
+    else if(_dmxSerial->available() >= (_numChannels + 1))
+    {
+        // We need to detect a break signal indicating the start of the message.
+        // Arduino doesn't really have a way to actually read a break signal, it
+        // will instead appear as an extra zero byte at the start. This has the
+        // risk of not synchronizing properly, but it should be resolved by
+        // calling update() freuently enough (ie. faster than messages are sent)
+        // and flushing the RX buffer if not synced. We can do one other check:
+        // after the break signal, channel 0 is sent, which should always have a
+        // value of zero
+
+        // Read out break signal (hopefully!) and peek at channel 0 (hopefully!)
+        if((_dmxSerial->read() != 0) || (_dmxSerial->peek() != 0))
+        {
+            // If we get here, then we're not synced properly. We can try to
+            // flush out all the data and hope the next time is synced
+            _dmxSerial->flush(false);
+            return false;
+        }
+        
+        // We're probably synced! Read data into buffer
+        _dmxSerial->read(_dmxBuffer, _numChannels);
+
+        // Set flag indicating we have new data
+        _dataAvailable = true;
+        
+        // Success
+        return true;
+    }
+
+    // Something went wrong (most likely haven't received all the bytes yet)
+    return false;
+}

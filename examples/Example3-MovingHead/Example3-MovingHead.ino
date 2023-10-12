@@ -25,7 +25,7 @@ char password[] = "artnetnode";
 
 // Artnet settings
 ArtnetWifi artnet;
-WiFiUdp UdpSend;
+WiFiUDP UdpSend;
 const int startUniverse = 0;
 const int endUniverse = 0;//end Universe should be total channels/512
 
@@ -89,6 +89,8 @@ void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* d
 void setup()
 {
   Serial.begin(115200);
+  Serial.println("SparkFun DMX Example 3 - Moving Head");
+
   //Fixture Hardware Declarations
   FastLED.addLeds<APA102, DATA0, CLOCK, BGR>(matrix, NUM_LEDS);
   pan.attach(DATA1);

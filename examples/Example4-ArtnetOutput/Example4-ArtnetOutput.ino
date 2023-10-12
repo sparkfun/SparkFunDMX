@@ -29,8 +29,17 @@ ArtnetWifi artnet;
 const int startUniverse = 0;
 const int endUniverse = 0;//end Universe should be total channels/512
 
+// Create DMX object
 SparkFunDMX dmx;
-WiFiUdp UdpSend;
+
+// Create serial port to be used for DMX interface. Exact implementation depends
+// on platform, this example is for the ESP32
+HardwareSerial dmxSerial(2);
+
+// Enable pin for DMX shield (Free pin on Thing Plus or Feather pinout)
+uint8_t enPin = 21;
+
+WiFiUDP UdpSend;
 bool sendFrame = 1;
 int previousDataLength = 0;
 
@@ -64,7 +73,7 @@ void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* d
   Serial.println(length);
   for (int channel = 0; channel < length; channel++)
   {
-    dmx.write(channel + 1, data[channel]);//Add one for offset
+    dmx.writeByte(channel + 1, data[channel]);//Add one for offset
   }
   previousDataLength = length;
   if (universe == endUniverse) //Display our data if we have received all of our universes, prevents incomplete frames when more universes are concerned.
@@ -77,8 +86,16 @@ void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* d
 void setup()
 {
   Serial.begin(115200);
-  //Fixture Hardware Declarations
-  dmx.initWrite(MAX_CHANNEL);//Resolume sends full ArtNet packets so that's what we listen for
+  Serial.println("SparkFun DMX Example 4 - Artnet Output");
+
+  // Begin DMX serial port
+  dmxSerial.begin(DMX_BAUD, DMX_FORMAT);
+
+  // Begin DMX driver
+  dmx.begin(dmxSerial, enPin, MAX_CHANNEL);//Resolume sends full ArtNet packets so that's what we listen for
+
+    // Set communicaiton direction, which can be changed on the fly as needed
+    dmx.setComDir(DMX_WRITE_DIR);
 
   if (connectWifi())
   {
