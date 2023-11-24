@@ -16,14 +16,6 @@ Distributed as-is; no warranty is given.
 /* ----- LIBRARIES ----- */
 #include "SparkFunDMX.h"
 
-// Static member definitions and initial values
-HardwareSerial* SparkFunDMX::_dmxSerial = nullptr;
-uint8_t SparkFunDMX::_dmxBuffer[DMX_MAX_CHANNELS];
-uint16_t SparkFunDMX::_numChannels = 1;
-uint8_t SparkFunDMX::_enPin = 255;
-bool SparkFunDMX::_comDir = DMX_READ_DIR;
-bool SparkFunDMX::_dataAvailable = false;
-
 void SparkFunDMX::begin(HardwareSerial& port, uint8_t enPin, uint16_t numChannels)
 {
     // Store serial stream port
@@ -39,9 +31,15 @@ void SparkFunDMX::begin(HardwareSerial& port, uint8_t enPin, uint16_t numChannel
     if(_numChannels > DMX_MAX_CHANNELS)
         _numChannels = DMX_MAX_CHANNELS;
 
+    memset(_dmxBuffer, 0, _numChannels);
+
     // Configure enable pin, default to reading
     pinMode(_enPin, OUTPUT);
+
+    _comDir = DMX_WRITE_DIR;
     setComDir(DMX_READ_DIR);
+
+    _dataAvailable = false;
 }
 
 void SparkFunDMX::setComDir(bool comDir)
